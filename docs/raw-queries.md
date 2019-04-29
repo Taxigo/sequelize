@@ -5,7 +5,7 @@ As there are often use cases in which it is just easier to execute raw / already
 By default the function will return two arguments - a results array, and an object containing metadata (affected rows etc.). Note that since this is a raw query, the metadata (property names etc.) is dialect specific. Some dialects return the metadata "within" the results object (as properties on an array). However, two arguments will always be returned, but for MSSQL and MySQL it will be two references to the same object.
 
 ```js
-sequelize.query("UPDATE users SET y = 42 WHERE x = 12").spread((results, metadata) => {
+sequelize.query("UPDATE users SET y = 42 WHERE x = 12").then(([results, metadata]) => {
   // Results will be an empty array and metadata will contain the number of affected rows.
 })
 ```
@@ -25,12 +25,18 @@ A second option is the model. If you pass a model the returned data will be inst
 
 ```js
 // Callee is the model definition. This allows you to easily map a query to a predefined model
-sequelize.query('SELECT * FROM projects', { model: Projects }).then(projects => {
-  // Each record will now be a instance of Project
-})
+sequelize
+  .query('SELECT * FROM projects', {
+    model: Projects,
+    mapToModel: true // pass true here if you have any mapped fields
+  })
+  .then(projects => {
+    // Each record will now be an instance of Project
+  })
 ```
 
 ## Replacements
+
 Replacements in a query can be done in two different ways, either using named parameters (starting with `:`), or unnamed, represented by a `?`. Replacements are passed in the options object.
 
 * If an array is passed, `?` will be replaced in the order that they appear in the array
@@ -71,9 +77,8 @@ sequelize.query('SELECT * FROM users WHERE name LIKE :search_name ',
 ```
 
 ## Bind Parameter
-Bind parameters are like replacements. Except replacements are escaped and inserted into the query by sequelize before the query is sent to the database, while bind parameters are sent to the database outside the SQL query text. A query can have either bind parameters or replacements.
 
-Only SQLite and PostgreSQL support bind parameters. Other dialects will insert them into the SQL query in the same way it is done for replacements. Bind parameters are referred to by either $1, $2, ... (numeric) or $key (alpha-numeric). This is independent of the dialect.
+Bind parameters are like replacements. Except replacements are escaped and inserted into the query by sequelize before the query is sent to the database, while bind parameters are sent to the database outside the SQL query text. A query can have either bind parameters or replacements. Bind parameters are referred to by either $1, $2, ... (numeric) or $key (alpha-numeric). This is independent of the dialect.
 
 * If an array is passed, `$1` is bound to the 1st element in the array (`bind[0]`)
 * If an object is passed, `$key` is bound to `object['key']`. Each key must begin with a non-numeric char. `$1` is not a valid key, even if `object['1']` exists.
@@ -96,4 +101,3 @@ sequelize.query('SELECT *, "text with literal $$1 and literal $$status" as t FRO
   console.log(projects)
 })
 ```
-
